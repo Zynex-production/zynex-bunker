@@ -3,261 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZYNEX OS v1.0</title>
+    <title>ZYNEX TERMINAL</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
-        :root {
-            --primary: #7B2CBF;
-            --secondary: #00ff41;
-            --bg: #050505;
-            --panel: #111111;
-            --error: #ff003c;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--primary);
-            font-family: 'Share Tech Mono', monospace;
-            margin: 0;
-            padding: 15px;
-            overflow: hidden; /* Чтобы не дергалось при вводе */
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            box-sizing: border-box;
-        }
-
-        /* Эффект старого монитора */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 10;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-        }
-
-        .container {
-            border: 1px solid var(--primary);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            position: relative;
-            box-shadow: 0 0 15px rgba(123, 44, 191, 0.2);
-        }
-
-        .header {
-            text-align: center;
-            border-bottom: 1px solid var(--primary);
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-
-        .status-line {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-
-        /* Область чата */
-        #chat-log {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding-right: 5px;
-        }
-
-        .msg { margin-bottom: 12px; line-height: 1.3; font-size: 13px; }
-        .u-prefix { color: var(--primary); font-weight: bold; }
-        .a-prefix { color: var(--secondary); font-weight: bold; }
-        .system { color: #888; font-style: italic; }
-
-        /* Поле ввода */
-        .input-box {
-            display: flex;
-            gap: 10px;
-            border-top: 1px solid #333;
-            padding-top: 10px;
-        }
-
-        input {
-            flex: 1;
-            background: transparent;
-            border: 1px solid var(--primary);
-            color: var(--primary);
-            padding: 8px;
-            font-family: inherit;
-            outline: none;
-        }
-
-        button {
-            background: var(--primary);
-            color: #000;
-            border: none;
-            padding: 0 15px;
-            font-family: inherit;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        button:active { opacity: 0.7; }
-
-        /* Скроллбар */
-        #chat-log::-webkit-scrollbar { width: 4px; }
-        #chat-log::-webkit-scrollbar-thumb { background: var(--primary); }
-
-        .admin-mode { border-color: var(--secondary); color: var(--secondary); box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); }
-        .admin-mode input { border-color: var(--secondary); color: var(--secondary); }
-        .admin-mode button { background: var(--secondary); }
-
-        .loading { animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } }
+        body { background: #000; color: #7B2CBF; font-family: 'Share Tech Mono', monospace; margin: 0; padding: 15px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        .terminal { border: 1px solid #7B2CBF; flex: 1; display: flex; flex-direction: column; padding: 10px; box-shadow: 0 0 10px #7B2CBF; }
+        #output { flex: 1; overflow-y: auto; margin-bottom: 10px; font-size: 14px; white-space: pre-wrap; }
+        .input-line { display: flex; gap: 10px; border-top: 1px solid #333; padding-top: 10px; }
+        input { flex: 1; background: transparent; border: 1px solid #7B2CBF; color: #7B2CBF; padding: 8px; font-family: inherit; outline: none; }
+        button { background: #7B2CBF; color: #000; border: none; padding: 0 15px; cursor: pointer; font-family: inherit; font-weight: bold; }
+        .system { color: #555; }
+        .ai { color: #00ff41; }
+        .error { color: #ff003c; }
     </style>
 </head>
 <body>
-
-    <div class="container" id="main-frame">
-        <div class="header">[ ZYNEX CORE v1.0 ]</div>
-        
-        <div class="status-line">
-            <span>USER: <span id="st-user">---</span></span>
-            <span>SEC-LEVEL: <span id="st-role">GUEST</span></span>
-        </div>
-
-        <div id="chat-log">
-            <div class="msg system">> INITIALIZING UPLINK...</div>
-        </div>
-
-        <div class="input-box">
-            <input type="text" id="user-input" placeholder="ENTER COMMAND..." autocomplete="off">
-            <button onclick="handleSend()">EXEC</button>
+    <div class="terminal">
+        <div id="output"><span class="system">> SYSTEM BOOT... READY.</span></div>
+        <div class="input-line">
+            <input type="text" id="cmd" placeholder="ВВЕДИТЕ КОМАНДУ..." autocomplete="off">
+            <button onclick="send()">EXEC</button>
         </div>
     </div>
 
     <script>
-        // Конфиг
-        const CONFIG = {
-            url: 'https://hcleqoqfphjfpfrbkddl.supabase.co',
-            key: 'sb_publishable_Puql0xQZgDAzZLA_hgOa6A_Q4UbP1qd',
-            defaultId: 6538403307
-        };
-
         const tg = window.Telegram.WebApp;
-        const supabaseClient = supabase.createClient(CONFIG.url, CONFIG.key);
-        
-        let userId = tg.initDataUnsafe?.user?.id || CONFIG.defaultId;
-        let isProcessing = false;
+        tg.expand();
 
-        // Инициализация системы
-        async function bootSystem() {
-            tg.expand();
-            tg.ready();
-            
-            addLog("ESTABLISHING CONNECTION...", "system");
+        const client = supabase.createClient(
+            'https://hcleqoqfphjfpfrbkddl.supabase.co', 
+            'sb_publishable_Puql0xQZgDAzZLA_hgOa6A_Q4UbP1qd'
+        );
 
-            try {
-                // Пытаемся получить данные пользователя
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('telegram_id', userId)
-                    .single();
+        const out = document.getElementById('output');
+        const inp = document.getElementById('cmd');
 
-                if (data) {
-                    document.getElementById('st-user').innerText = data.username || userId;
-                    document.getElementById('st-role').innerText = data.role;
-                    
-                    if (data.role === 'SUPER_ADMIN') {
-                        document.getElementById('main-frame').classList.add('admin-mode');
-                        addLog("ADMIN ACCESS GRANTED.", "a-prefix");
-                    }
-                } else {
-                    addLog("GUEST SESSION STARTED.", "system");
-                }
-            } catch (e) {
-                addLog("DATABASE OFFLINE. RUNNING LOCAL MODE.", "system");
-            }
-
-            addLog("ZYNEX AI READY.", "a-prefix");
-        }
-
-        // Логирование в интерфейс
-        function addLog(text, type) {
-            const log = document.getElementById('chat-log');
+        function print(text, cls = '') {
             const div = document.createElement('div');
-            div.className = 'msg';
-            
-            if (type === "u-prefix") div.innerHTML = `<span class="u-prefix">[USER]:</span> ${text}`;
-            else if (type === "a-prefix") div.innerHTML = `<span class="a-prefix">[AI]:</span> ${text}`;
-            else div.innerHTML = `<span class="system">> ${text}</span>`;
-            
-            log.appendChild(div);
-            log.scrollTop = log.scrollHeight;
-            return div;
+            div.className = cls;
+            div.innerText = text;
+            out.appendChild(div);
+            out.scrollTop = out.scrollHeight;
         }
 
-        // Отправка запроса
-        async function handleSend() {
-            const input = document.getElementById('user-input');
-            const prompt = input.value.trim();
+        async function send() {
+            const val = inp.value.trim();
+            if (!val) return;
 
-            if (!prompt || isProcessing) return;
-
-            isProcessing = true;
-            addLog(prompt, "u-prefix");
-            input.value = '';
-
-            const loadingMsg = addLog("ANALYZING...", "system");
-            loadingMsg.classList.add('loading');
+            print(`\n[USER]: ${val}`);
+            inp.value = '';
+            
+            const loading = document.createElement('span');
+            loading.innerText = "> ОБРАБОТКА...";
+            out.appendChild(loading);
 
             try {
-                // Вызов Edge Function
-                const { data, error } = await supabaseClient.functions.invoke('zynex-ai', {
-                    body: { prompt: prompt }
+                const { data, error } = await client.functions.invoke('zynex-ai', {
+                    body: { prompt: val }
                 });
 
-                loadingMsg.remove();
+                loading.remove();
 
                 if (error) {
-                    addLog("ERROR: UPLINK FAILED. CHECK EDGE FUNCTION STATUS.", "system");
-                    console.error('Invoke error:', error);
+                    print(`> ОШИБКА: ${error.message || 'Связь прервана'}`, 'error');
                 } else {
-                    const reply = data.choices[0].message.content;
-                    addLog(reply, "a-prefix");
-
-                    // Сохраняем в историю (фоново)
-                    supabaseClient.from('ai_chats').insert([
-                        { telegram_id: userId, role: 'assistant', content: reply }
-                    ]).then();
+                    print(`[ZYNEX]: ${data.choices[0].message.content}`, 'ai');
                 }
-
-            } catch (err) {
-                loadingMsg.remove();
-                addLog("CRITICAL: CORE DISCONNECTED.", "system");
-                console.error('Global error:', err);
-            } finally {
-                isProcessing = false;
+            } catch (e) {
+                loading.remove();
+                print(`> КРИТИЧЕСКИЙ СБОЙ: Проверь статус Deploy`, 'error');
             }
         }
 
-        // Обработка Enter
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSend();
-        });
-
-        bootSystem();
+        inp.addEventListener('keypress', (e) => { if (e.key === 'Enter') send(); });
     </script>
 </body>
 </html>
