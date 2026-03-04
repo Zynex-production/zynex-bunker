@@ -44,11 +44,12 @@
             font-family: inherit; 
             cursor: pointer; 
             text-transform: uppercase;
+            transition: 0.3s;
         }
 
         button:hover { background: rgba(123, 44, 191, 0.1); }
         
-        /* Чат стили */
+        /* ЧАТ ТЕРМИНАЛ */
         #chat-container {
             height: 250px;
             overflow-y: auto;
@@ -57,13 +58,16 @@
             margin: 15px 0;
             background: #050505;
             font-size: 13px;
+            scrollbar-width: thin;
+            scrollbar-color: #7B2CBF #050505;
         }
-        .user-msg { color: #7B2CBF; margin-bottom: 8px; }
-        .ai-msg { color: #00ff41; margin-bottom: 8px; }
+        .user-msg { color: #7B2CBF; margin-bottom: 10px; border-left: 2px solid #7B2CBF; padding-left: 5px; }
+        .ai-msg { color: #00ff41; margin-bottom: 10px; border-left: 2px solid #00ff41; padding-left: 5px; }
         
+        .input-group { display: flex; gap: 5px; }
         input[type="text"] {
-            width: calc(100% - 22px);
-            background: #1A1A1A;
+            flex: 1;
+            background: #000;
             border: 1px solid #7B2CBF;
             color: #7B2CBF;
             padding: 10px;
@@ -80,34 +84,32 @@
 
     <div class="panel" id="main-panel">
         <h2>[ ZYNEX BUNKER 1.0 ]</h2>
-        <div id="loader">ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ...</div>
+        <div id="loader">ПРОВЕРКА ШИФРОВАНИЯ...</div>
 
         <div id="app-content" class="hidden">
             <p>> ПОЛЬЗОВАТЕЛЬ: <span id="username">---</span></p>
             <p>> СТАТУС: <span id="role">---</span></p>
             
-            <hr style="border: 0.5px solid #333; margin: 20px 0;">
+            <hr style="border: 0.5px solid #333; margin: 15px 0;">
 
-            <div id="ai-section">
-                <h3 style="margin:0">>_ ЯДРО ИИ ZYNEX</h3>
+            <div id="ai-module">
+                <h3 style="margin:0; font-size: 14px; color: #00ff41;">>_ ZYNEX_AI_CORE (SECURE)</h3>
                 <div id="chat-container">
-                    <div class="ai-msg">[SYSTEM]: Ожидаю голосовой или текстовый ввод...</div>
+                    <div class="ai-msg">[SYSTEM]: Канал связи защищен. Ожидаю ввод...</div>
                 </div>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="ai-input" placeholder="Введите команду...">
-                    <button id="send-btn" onclick="askAI()" style="width: auto; margin-top:0;">[>]</button>
+                <div class="input-group">
+                    <input type="text" id="ai-input" placeholder="Команда для ИИ..." onkeypress="if(event.key==='Enter') askAI()">
+                    <button onclick="askAI()" style="width: 50px; margin-top:0;">></button>
                 </div>
             </div>
 
-            <hr style="border: 0.5px solid #333; margin: 20px 0;">
+            <hr style="border: 0.5px solid #333; margin: 15px 0;">
             
-            <div id="storage-module">
-                <button onclick="document.getElementById('file-input').click()">[ ЗАГРУЗИТЬ ДАННЫЕ В БУНКЕР ]</button>
-                <input type="file" id="file-input" style="display:none">
-            </div>
+            <button onclick="document.getElementById('file-input').click()">[ ЗАГРУЗИТЬ ДАННЫЕ ]</button>
+            <input type="file" id="file-input" style="display:none">
 
             <div id="admin-module" class="hidden">
-                <button onclick="alert('NUCLEAR LOCK ACTIVATED')" style="color:#ff003c; border-color:#ff003c; margin-top:20px;">
+                <button onclick="alert('NUCLEAR LOCK: АКТИВИРОВАНО')" style="color:#ff003c; border-color:#ff003c;">
                     [ NUCLEAR LOCK ]
                 </button>
             </div>
@@ -118,12 +120,10 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // Конфигурация Supabase
         const SUPABASE_URL = 'https://hcleqoqfphjfpfrbkddl.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_Puql0xQZgDAzZLA_hgOa6A_Q4UbP1qd';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // ВАЖНО: Получи свой ключ на https://console.groq.com/
-        const AI_API_KEY = 'ВСТАВЬ_СВОЙ_КЛЮЧ_GROQ_ЗДЕСЬ'; 
 
         let currentUserId = 6538403307;
 
@@ -153,46 +153,39 @@
         async function askAI() {
             const input = document.getElementById('ai-input');
             const chat = document.getElementById('chat-container');
-            const text = input.value.trim();
+            const query = input.value.trim();
 
-            if (!text) return;
+            if (!query) return;
 
-            // 1. Отображаем сообщение юзера
-            chat.innerHTML += `<div class="user-msg">[YOU]: ${text}</div>`;
+            chat.innerHTML += `<div class="user-msg">[USER]: ${query}</div>`;
             input.value = '';
             chat.scrollTop = chat.scrollHeight;
 
-            // 2. Индикатор загрузки
-            const tempId = 'ai-temp-' + Date.now();
-            chat.innerHTML += `<div class="ai-msg" id="${tempId}">[AI]: Обработка...</div>`;
+            const aiMsgId = 'ai-' + Date.now();
+            chat.innerHTML += `<div class="ai-msg" id="${aiMsgId}">[AI]: Анализ через Edge Function...</div>`;
+            chat.scrollTop = chat.scrollHeight;
 
             try {
-                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${AI_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: "llama3-8b-8192",
-                        messages: [{role: "user", content: text}]
-                    })
+                // ВЫЗОВ ЗАЩИЩЕННОЙ ФУНКЦИИ SUPABASE
+                const { data, error } = await supabaseClient.functions.invoke('zynex-ai', {
+                    body: { prompt: query }
                 });
 
-                const resData = await response.json();
-                const aiResponse = resData.choices[0].message.content;
+                if (error) throw error;
 
-                // 3. Заменяем "Обработка" на ответ
-                document.getElementById(tempId).innerText = `[AI]: ${aiResponse}`;
+                const reply = data.choices[0].message.content;
+                document.getElementById(aiMsgId).innerText = `[AI]: ${reply}`;
 
-                // 4. Сохраняем в Supabase
+                // Сохранение в БД
                 await supabaseClient.from('ai_chats').insert([
-                    { telegram_id: currentUserId, role: 'user', content: text },
-                    { telegram_id: currentUserId, role: 'assistant', content: aiResponse }
+                    { telegram_id: currentUserId, role: 'user', content: query },
+                    { telegram_id: currentUserId, role: 'assistant', content: reply }
                 ]);
 
             } catch (err) {
-                document.getElementById(tempId).innerText = "[AI]: ОШИБКА СВЯЗИ. ПРОВЕРЬТЕ API KEY.";
+                console.error('AI Error:', err);
+                document.getElementById(aiMsgId).innerText = "[ОШИБКА]: Доступ к ИИ отклонен или функция не развернута.";
+                document.getElementById(aiMsgId).style.color = "#ff003c";
             }
             chat.scrollTop = chat.scrollHeight;
         }
