@@ -1,1 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZYNEX BUNKER 1.0</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        
+        body { 
+            background-color: #0D0D0D; 
+            color: #7B2CBF; 
+            font-family: 'Share Tech Mono', monospace; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
 
+        .panel { 
+            background-color: #1A1A1A; 
+            border: 1px solid #7B2CBF; 
+            border-radius: 5px; 
+            padding: 20px; 
+            width: 90%; 
+            max-width: 400px; 
+            box-shadow: 0 0 15px rgba(123, 44, 191, 0.3); 
+            margin-bottom: 20px; 
+        }
+
+        .access-granted { border-color: #00ff41; color: #00ff41; box-shadow: 0 0 15px rgba(0, 255, 65, 0.2); }
+        
+        h2 { margin-top: 0; border-bottom: 1px solid currentColor; padding-bottom: 10px; text-align: center; }
+
+        button { 
+            background: none; 
+            color: inherit; 
+            border: 1px solid currentColor; 
+            padding: 12px; 
+            width: 100%; 
+            margin-top: 15px; 
+            font-family: inherit; 
+            font-size: 14px;
+            cursor: pointer; 
+            text-transform: uppercase;
+        }
+
+        button:hover { background: rgba(123, 44, 191, 0.1); }
+        
+        .status-msg { font-size: 12px; margin-top: 10px; color: #888; text-align: center; }
+        
+        #loader { font-size: 18px; animation: blink 1s infinite; margin: 20px 0; text-align: center; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="panel" id="main-panel">
+        <h2>[ ZYNEX BUNKER 1.0 ]</h2>
+        
+        <div id="loader">ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ...</div>
+
+        <div id="app-content" class="hidden">
+            <p>> ПОЛЬЗОВАТЕЛЬ: <span id="username">---</span></p>
+            <p>> СТАТУС: <span id="role">---</span></p>
+            <p>> СИСТЕМА: <span style="color:#00ff41">ONLINE</span></p>
+            
+            <hr style="border: 0.5px solid #333; margin: 20px 0;">
+            
+            <div id="storage-module">
+                <h3 style="margin:0">>_ ХРАНИЛИЩЕ МЕДИА</h3>
+                <input type="file" id="file-input" style="display:none">
+                <button onclick="document.getElementById('file-input').click()">[ ЗАГРУЗИТЬ ФАЙЛ ]</button>
+                <div id="upload-status" class="status-msg">Ожидание команды...</div>
+            </div>
+
+            <div id="admin-module" class="hidden">
+                <button onclick="alert('NUCLEAR LOCK: Все сессии завершены')" style="color:#ff003c; border-color:#ff003c;">
+                    [ NUCLEAR LOCK ]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // --- ТВОИ ПЕРСОНАЛЬНЫЕ КЛЮЧИ ИНТЕГРИРОВАНЫ ---
+        const SUPABASE_URL = 'https://hcleqoqfphjfpfrbkddl.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_Puql0xQZgDAzZLA_hgOa6A_Q4UbP1qd';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function startSystem() {
+            const tgUser = tg.initDataUnsafe?.user;
+            const userId = tgUser ? tgUser.id : 6538403307; 
+
+            // Запрос к базе
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('telegram_id', userId)
+                .single();
+
+            document.getElementById('loader').classList.add('hidden');
+            const content = document.getElementById('app-content');
+            content.classList.remove('hidden');
+
+            if (data) {
+                document.getElementById('username').innerText = data.username || "Director";
+                document.getElementById('role').innerText = data.role;
+                document.getElementById('main-panel').classList.add('access-granted');
+                
+                if (data.role === 'SUPER_ADMIN') {
+                    document.getElementById('admin-module').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('main-panel').style.borderColor = '#ff003c';
+                document.getElementById('app-content').innerHTML = "<h2 style='color:#ff003c'>ОШИБКА ДОСТУПА</h2><p style='text-align:center'>ID " + userId + " НЕ АВТОРИЗОВАН.</p>";
+            }
+        }
+
+        document.getElementById('file-input').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('upload-status');
+            status.innerText = "ПЕРЕДАЧА: " + file.name + "...";
+            status.style.color = "#7B2CBF";
+
+            const fileName = Date.now() + '_' + file.name;
+            const { data, error } = await supabaseClient.storage
+                .from('bunker-files')
+                .upload(fileName, file);
+
+            if (error) {
+                status.innerText = "ОШИБКА: " + error.message;
+                status.style.color = "#ff003c";
+            } else {
+                status.innerText = "ФАЙЛ УСПЕШНО СОХРАНЕН";
+                status.style.color = "#00ff41";
+                
+                await supabaseClient.from('audit_logs').insert([{ 
+                    telegram_id: 6538403307, 
+                    action: 'UPLOAD: ' + file.name 
+                }]);
+            }
+        };
+
+        startSystem();
+    </script>
+</body>
+</html>
