@@ -32,10 +32,10 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const client = supabase.createClient(
-            'https://hcleqoqfphjfpfrbkddl.supabase.co', 
-            'sb_publishable_Puql0xQZgDAzZLA_hgOa6A_Q4UbP1qd'
-        );
+      const client = supabase.createClient(
+    'https://hcleqoqfphjfpfrbkddl.supabase.co', // Твой ID проекта
+    'sb_publishable_Puql0xQZgDAzZLA_hgOa6A_Q4UbP1qd' // Твой публичный ключ
+);
 
         const out = document.getElementById('output');
         const inp = document.getElementById('cmd');
@@ -81,3 +81,5 @@
     </script>
 </body>
 </html>
+
+
